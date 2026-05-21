@@ -10,7 +10,8 @@
     <main class="app-shell">
       <section class="panel">
         <h1>Paper-Reading-Agent</h1>
-        <p>输入论文标题和摘要，生成最小版本的论文阅读与学习规划结果。</p>
+        <p>输入论文信息，生成最小版本的论文阅读与学习规划结果。</p>
+        <p id="service-status" class="status status-waiting">后端状态：等待检查</p>
 
         <form id="paper-form" class="paper-form">
           <label>
@@ -21,6 +22,16 @@
           <label>
             论文摘要
             <textarea id="paper-abstract" name="abstract" rows="8" placeholder="粘贴论文摘要或关键内容"></textarea>
+          </label>
+
+          <label>
+            论文正文 Markdown
+            <textarea
+              id="paper-markdown-body"
+              name="markdown_body"
+              rows="10"
+              placeholder="粘贴论文正文、Markdown 笔记或关键章节内容"
+            ></textarea>
           </label>
 
           <button type="submit">生成分析</button>

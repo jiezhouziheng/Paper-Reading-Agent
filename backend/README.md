@@ -17,3 +17,15 @@ uvicorn app.main:app --reload
 ```
 
 服务默认运行在 `http://localhost:8000`。
+
+## 健康检查
+
+```bash
+curl http://localhost:8000/health
+```
+
+返回示例：
+
+```json
+{"status":"ok","service":"Paper-Reading-Agent"}
+```

@@ -38,6 +38,32 @@ p {
   line-height: 1.6;
 }
 
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status-waiting {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.status-ok {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.status-error {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 .paper-form {
   display: grid;
   gap: 16px;

@@ -27,3 +27,19 @@ class LLMClient:
                 "task": "根据术语表补充前置知识，并查找相关论文。",
             },
         ]
+
+    def extract_glossary(self, title: str, abstract: str) -> list[dict[str, str]]:
+        return [
+            {
+                "term": "Transformer",
+                "explanation": "一种基于自注意力机制的序列建模架构。",
+            },
+            {
+                "term": "Attention",
+                "explanation": "让模型把计算重点放到更重要的信息上。",
+            },
+            {
+                "term": "Embedding",
+                "explanation": "把离散符号映射到连续向量空间。",
+            },
+        ]

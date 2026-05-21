@@ -1,3 +1,5 @@
+import json
+
 from pathlib import Path
 
 
@@ -13,3 +15,23 @@ class FileStore:
         self.papers_dir.mkdir(parents=True, exist_ok=True)
         self.outputs_dir.mkdir(parents=True, exist_ok=True)
         self.indexes_dir.mkdir(parents=True, exist_ok=True)
+
+    def prepare_paper_workspace(self, paper_id: str) -> dict[str, Path]:
+        self.ensure_runtime_dirs()
+
+        paper_dir = self.papers_dir / paper_id
+        output_dir = self.outputs_dir / paper_id
+
+        paper_dir.mkdir(parents=True, exist_ok=True)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        return {
+            "paper_dir": paper_dir,
+            "output_dir": output_dir,
+        }
+
+    def save_json(self, path: Path, data: dict) -> None:
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def save_text(self, path: Path, text: str) -> None:
+        path.write_text(text, encoding="utf-8")
