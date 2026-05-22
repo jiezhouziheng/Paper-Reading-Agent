@@ -238,9 +238,8 @@ data/outputs/<paper_id>/
 5. 增加 PDF 解析能力。
 6. 扩展前端为更完整的阅读工作台。
 
-## 提交建议
 
-本版本建议作为初步 MVP 提交：
+**本版本作为初步 MVP 提交**：
 
 ```bash
 git add README.md backend frontend
