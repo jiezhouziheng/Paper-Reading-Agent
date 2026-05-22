@@ -11,9 +11,8 @@ body {
 
 .app-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 24px;
-  max-width: 1120px;
+  max-width: 960px;
   min-height: 100vh;
   margin: 0 auto;
   padding: 40px 24px;
@@ -120,7 +119,6 @@ pre {
 
 @media (max-width: 800px) {
   .app-shell {
-    grid-template-columns: 1fr;
     padding: 24px 16px;
   }
 }

@@ -42,6 +42,27 @@
         <h2>分析结果</h2>
         <pre id="result">等待输入...</pre>
       </section>
+
+      <section class="panel">
+        <h2>论文问答</h2>
+        <p id="qa-status">请先生成分析，再围绕当前论文提问。</p>
+
+        <form id="question-form" class="paper-form">
+          <label>
+            问题
+            <textarea
+              id="paper-question"
+              name="question"
+              rows="4"
+              placeholder="例如：这篇论文的方法核心是什么？"
+            ></textarea>
+          </label>
+
+          <button id="ask-button" type="submit" disabled>提交问题</button>
+        </form>
+
+        <pre id="qa-result">等待提问...</pre>
+      </section>
     </main>
 
     <script type="module" src="./src/main.js"></script>

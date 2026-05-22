@@ -1,6 +1,13 @@
 const form = document.querySelector("#paper-form");
 const result = document.querySelector("#result");
 const serviceStatus = document.querySelector("#service-status");
+const questionForm = document.querySelector("#question-form");
+const questionInput = document.querySelector("#paper-question");
+const qaResult = document.querySelector("#qa-result");
+const qaStatus = document.querySelector("#qa-status");
+const askButton = document.querySelector("#ask-button");
+
+let currentPaperId = null;
 
 async function checkServiceHealth() {
   try {
@@ -66,6 +73,32 @@ function renderResult(data) {
   ].join("\n");
 }
 
+
+function renderAnswer(data) {
+  const citations = Array.isArray(data.citations) ? data.citations : [];
+
+  const citationText = citations.length
+    ? citations
+        .map(
+          (item, index) =>
+            `${index + 1}. [${item.chunk_id}] ${item.section_title}，score=${item.score}\n${item.text}`
+        )
+        .join("\n\n")
+    : "无";
+
+  return [
+    `论文ID：${data.paper_id ?? "-"}`,
+    `问题：${data.question ?? "-"}`,
+    "",
+    "回答",
+    data.answer ?? "-",
+    "",
+    "引用片段",
+    citationText,
+  ].join("\n");
+}
+
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -91,9 +124,54 @@ form.addEventListener("submit", async (event) => {
     }
 
     const data = await response.json();
+    currentPaperId = data.paper_id ?? null;
     result.textContent = renderResult(data);
+
+    if (currentPaperId) {
+      askButton.disabled = false;
+      qaStatus.textContent = `当前论文：${currentPaperId}`;
+      qaResult.textContent = "可以开始提问。";
+    }
   } catch (error) {
     result.textContent = `请求失败：${error.message}`;
+  }
+});
+
+
+questionForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  if (!currentPaperId) {
+    qaResult.textContent = "请先生成论文分析。";
+    return;
+  }
+
+  const question = questionInput.value.trim();
+
+  if (!question) {
+    qaResult.textContent = "请输入问题。";
+    return;
+  }
+
+  qaResult.textContent = "检索中...";
+
+  try {
+    const response = await fetch(`http://localhost:8000/api/papers/${currentPaperId}/ask`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ question }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    qaResult.textContent = renderAnswer(data);
+  } catch (error) {
+    qaResult.textContent = `请求失败：${error.message}`;
   }
 });
 
