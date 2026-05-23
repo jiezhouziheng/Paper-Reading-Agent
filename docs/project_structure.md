@@ -1,6 +1,6 @@
-# 项目目录结构
+﻿# 项目目录结构
 
-当前版本先采用最小可运行结构，只保留前端、后端、模型调用和数据存储几个清晰模块，避免过早引入复杂架构。
+当前版本采用“本地文件系统 + FastAPI + 原生前端”的轻量结构。设计目标是先把论文阅读 Agent 的核心链路拆清楚：API 只处理 HTTP，服务层负责编排，解析、分块、检索、渲染、存储和模型调用分别独立。
 
 ```text
 Paper-Reading-Agent/
@@ -18,21 +18,43 @@ Paper-Reading-Agent/
 ├── backend/
 │   ├── README.md
 │   ├── requirements.txt
-│   └── app/
-│       ├── __init__.py
-│       ├── main.py
-│       ├── api/
-│       │   ├── __init__.py
-│       │   └── routes.py
-│       ├── services/
-│       │   ├── __init__.py
-│       │   └── paper_service.py
-│       ├── llm/
-│       │   ├── __init__.py
-│       │   └── client.py
-│       └── storage/
-│           ├── __init__.py
-│           └── file_store.py
+│   ├── pytest.ini
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── main.py
+│   │   ├── api/
+│   │   │   ├── __init__.py
+│   │   │   └── routes.py
+│   │   ├── schemas/
+│   │   │   ├── __init__.py
+│   │   │   └── paper.py
+│   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   └── paper_service.py
+│   │   ├── parsers/
+│   │   │   ├── __init__.py
+│   │   │   ├── markdown_parser.py
+│   │   │   └── chunking.py
+│   │   ├── retrieval/
+│   │   │   ├── __init__.py
+│   │   │   └── keyword_retriever.py
+│   │   ├── renderers/
+│   │   │   ├── __init__.py
+│   │   │   └── reading_note.py
+│   │   ├── llm/
+│   │   │   ├── __init__.py
+│   │   │   └── client.py
+│   │   └── storage/
+│   │       ├── __init__.py
+│   │       └── file_store.py
+│   └── tests/
+│       ├── test_api.py
+│       ├── test_paper_service.py
+│       ├── test_markdown_parser.py
+│       ├── test_chunking.py
+│       ├── test_paper_qa.py
+│       ├── test_keyword_retriever.py
+│       └── test_reading_note_renderer.py
 └── data/
     ├── README.md
     ├── papers/
@@ -47,34 +69,125 @@ Paper-Reading-Agent/
 
 ### frontend
 
-前端模块。当前只放一个最小静态页面，用于后续接入论文上传、阅读笔记展示和问答界面。后续如果需要更完整交互，可以再升级为 React 或 Vue 项目。
+前端模块。当前使用原生 HTML、CSS 和 JavaScript，提供一个轻量论文阅读工作流：
+
+- 检查后端健康状态。
+- 提交论文标题、摘要和 Markdown 正文。
+- 展示结构化分析结果。
+- 保存当前 `paper_id`。
+- 基于当前论文发起问答，并展示引用片段。
+
+前端当前不引入构建工具，便于快速验证 API 和产品流程。后续如果交互复杂度上升，再考虑升级为 React 或 Vue。
 
 ### backend
 
-后端模块。当前使用 FastAPI 作为最小 API 服务入口，负责接收前端请求、组织业务流程，并调用服务层。
+后端模块。当前使用 FastAPI 作为 API 服务入口，负责接收请求、调用服务层并返回结构化响应。
 
 ### backend/app/api
 
-API 路由层。只处理 HTTP 请求和响应，不直接写模型调用或文件存储逻辑。
+API 路由层。职责是：
+
+- 定义 HTTP 路由。
+- 定义请求模型。
+- 声明响应模型。
+- 把业务异常转换为 HTTP 状态码，例如把缺失 chunks 转换为 404。
+
+这一层不直接写文件、不解析 Markdown、不做检索。
+
+### backend/app/schemas
+
+结构化数据模型层。当前集中在 `paper.py`，定义：
+
+- `PaperAnalysisResult`
+- `SourceInfo`
+- `MarkdownSection`
+- `TextChunk`
+- `Summary`
+- `LearningTask`
+- `GlossaryItem`
+- `PaperQuestionAnswer`
+- `AnswerCitation`
+
+这些 schema 是后端服务、API 响应、JSON 落盘和前端消费之间的合同。
 
 ### backend/app/services
 
-业务流程层。负责编排论文分析、阅读笔记生成、学习计划生成等流程。
+业务流程层。`PaperService` 当前负责两个主流程：
+
+- `analyze()`：输入归一化、`paper_id` 生成、工作区创建、Markdown 保存、章节解析、正文分块、占位 LLM 分析、阅读笔记渲染和分析结果落盘。
+- `ask()`：读取指定论文的 `chunks.json`，调用检索器，返回带引用片段的问答结果。
+
+服务层只编排，不应该包含复杂解析、渲染和检索细节。
+
+### backend/app/parsers
+
+文档解析层。
+
+- `markdown_parser.py`：解析 Markdown 标题，生成章节结构。
+- `chunking.py`：把 Markdown 正文按段落和最大字符数切成可检索 chunks。
+
+后续 PDF 解析也应放在这一层，避免污染服务层。
+
+### backend/app/retrieval
+
+检索层。当前只有 `KeywordRetriever`，通过问题关键词与 chunk 文本的包含关系计算简单分数。
+
+这个模块是后续向量检索的替换点。未来可以新增 `VectorRetriever`，保持 `PaperService.ask()` 的整体流程不变。
+
+### backend/app/renderers
+
+输出渲染层。当前 `reading_note.py` 负责把结构化分析结果渲染成稳定 Markdown 阅读笔记。
+
+渲染逻辑独立后，服务层不再拼接大量 Markdown 字符串，也便于后续增加学习计划、术语表和问答历史的独立导出。
 
 ### backend/app/llm
 
-模型调用模块。负责封装 OpenAI API 或其他兼容大模型 API。后续替换模型供应商时，优先只改这个模块。
+模型调用模块。当前 `LLMClient` 是占位实现，保留总结、学习计划和术语表生成接口。
+
+后续接入 OpenAI API 或兼容大模型服务时，应优先改这个模块，而不是把模型调用散落到服务层或 API 层。
 
 ### backend/app/storage
 
-数据存储模块。当前先使用本地文件系统保存论文、输出结果和索引缓存。后续可以扩展 SQLite、向量数据库或对象存储。
+数据存储模块。`FileStore` 当前负责：
+
+- 运行期目录创建。
+- 单篇论文工作区创建。
+- JSON 保存和读取。
+- 文本保存。
+
+后续如果引入 SQLite、对象存储或向量数据库，应保持这里作为存储边界之一。
+
+### backend/tests
+
+自动化测试目录。当前测试覆盖：
+
+- API 健康检查、论文分析、论文问答。
+- 服务层分析流程、落盘和异常校验。
+- Markdown 章节解析。
+- 文本分块。
+- 关键词检索。
+- 阅读笔记渲染。
+
+`pytest.ini` 中设置了：
+
+- `pythonpath = .`：保证从项目根目录或 backend 目录运行测试时都能导入 `app`。
+- `--basetemp=.pytest_tmp_run`：规避 Windows 系统临时目录权限问题。
+- `-p no:cacheprovider`：关闭 pytest 缓存，避免 `.pytest_cache` 权限问题。
 
 ### data
 
 运行期数据目录：
 
-- `data/papers/`：保存用户上传或导入的论文文件。
-- `data/outputs/`：保存生成的阅读笔记、术语表、学习计划等文件。
-- `data/indexes/`：保存向量索引或检索缓存。
+- `data/papers/`：保存用户输入或导入的论文原文，例如 `paper.md`。
+- `data/outputs/`：保存 `analysis.json`、`chunks.json`、`reading_note.md`。
+- `data/indexes/`：预留给后续向量索引或检索缓存。
 
 这些目录中的运行期文件默认不提交到 Git，只保留 `.gitkeep` 占位文件。
+
+## 当前设计原则
+
+- 先本地闭环，再接外部服务。
+- 先稳定 schema，再接真实 LLM。
+- 先可追溯关键词检索，再升级语义检索。
+- 先把服务编排和具体能力拆开，避免后续功能堆进单个文件。
+- 每次新增能力都补对应测试，保证重构时有反馈。

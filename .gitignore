@@ -4,6 +4,7 @@ venv/
 __pycache__/
 .pytest_cache/
 .pytest_tmp/
+.pytest_tmp_run/
 *.py[cod]
 
 .idea/
