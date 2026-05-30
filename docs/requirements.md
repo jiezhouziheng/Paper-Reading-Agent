@@ -19,6 +19,8 @@ Paper-Reading-Agent
 
 - 支持手动输入论文标题、摘要和 Markdown 正文。
 - 支持 Markdown 章节解析和文本分块。
+- 支持通过 OpenAI Python SDK 调用真实 LLM 生成论文总结、术语表和学习计划。
+- 支持模型调用失败或未配置有效 API Key 时回退到占位分析。
 - 支持结构化分析结果和 Markdown 阅读笔记落盘。
 - 支持基于 chunks 的最小论文问答。
 - 支持前端完成分析和问答闭环。
@@ -28,7 +30,6 @@ Paper-Reading-Agent
 
 - PDF 文件解析。
 - 论文链接抓取。
-- 真实 LLM 调用。
 - 向量检索。
 - CLI 命令行入口。
 - 多论文库和历史记录。
@@ -38,7 +39,7 @@ Paper-Reading-Agent
 ### 4.1 当前已支持输入
 
 - 论文标题：用于展示、生成 `paper_id` 和后续元数据管理。
-- 论文摘要：用于占位 LLM 总结和阅读笔记。
+- 论文摘要：用于真实 LLM 分析和阅读笔记。
 - Markdown 正文：用于保存原文、解析章节、生成 chunks 和论文问答。
 - 用户问题：通过 `/api/papers/{paper_id}/ask` 围绕当前论文提问。
 
@@ -111,12 +112,13 @@ Paper-Reading-Agent
 当前状态：
 
 - 已定义 `LLMClient` 模型调用边界。
-- 当前返回占位总结、占位术语表和占位学习计划。
+- 已接入 OpenAI Python SDK，支持真实生成总结、术语表和学习计划。
+- 使用 `LLMAnalysisResult` 将模型输出解析为 Pydantic 结构，避免不稳定文本直接进入系统。
+- 未配置有效 API Key 或模型调用失败时，会回退到占位分析，保证本地解析、分块和落盘流程不中断。
 - 分析结果通过 Pydantic schema 固定结构。
 
 后续目标：
 
-- 接入真实 LLM API。
 - 生成论文的一页纸总结。
 - 提取研究问题、核心方法、主要贡献、实验设置、关键结果和局限性。
 - 识别论文中的关键术语，并生成术语解释。
@@ -187,6 +189,8 @@ Paper-Reading-Agent
 - Python：后端主要开发语言。
 - FastAPI：API 服务。
 - Pydantic：请求、响应和内部结构化数据模型。
+- OpenAI Python SDK：真实 LLM 分析调用。
+- python-dotenv：管理本地 `.env` 中的 API Key、模型名和可选 base url。
 - pytest：单元测试和接口测试。
 - FastAPI TestClient：API 测试。
 - 原生 HTML/CSS/JavaScript：前端 MVP。
@@ -194,7 +198,7 @@ Paper-Reading-Agent
 
 ### 8.2 后续候选
 
-- OpenAI API 或兼容 OpenAI 协议的大模型 API：摘要、问答、术语解释和学习规划生成。
+- OpenAI API 或兼容 OpenAI 协议的大模型 API：后续用于问答答案生成和更多分析任务。
 - PyMuPDF 或 pdfplumber：解析 PDF 文本、页码和基础版面信息。
 - FAISS 或 Chroma：本地向量检索。
 - SQLite：保存论文元数据、任务记录和用户配置。
@@ -219,7 +223,7 @@ Paper-Reading-Agent
 
 1. 优化 chunking，使 chunk 精确绑定章节，避免所有片段都归到首个 section。
 2. 增加问答历史落盘。
-3. 接入真实 LLM，将模板化回答升级为基于引用片段的生成式回答。
+3. 将模板化回答升级为基于引用片段的 LLM 生成式回答。
 4. 增加 PDF 解析。
 5. 引入 SQLite 管理论文元数据。
 6. 引入向量检索。

@@ -22,6 +22,7 @@ class PaperService:
         self.file_store = file_store or FileStore()
         self.retriever = retriever or KeywordRetriever()
 
+    # 唯一论文ID生成
     def _create_paper_id(self, title: str) -> str:
         base = title.strip().lower()
         base = re.sub(r"[^a-z0-9]+", "-", base)
@@ -31,6 +32,7 @@ class PaperService:
         unique_suffix = uuid4().hex[:8]
         return f"{base}-{timestamp}-{unique_suffix}"
 
+    # 分析论文
     def analyze(self, title: str, abstract: str, markdown_body: str = "") -> PaperAnalysisResult:
         # 输入归一化和兜底校验
         title = (title or "").strip()
@@ -53,9 +55,15 @@ class PaperService:
             sections = parse_markdown_sections(markdown_body)
 
         chunks = build_text_chunks(markdown_body, sections) if markdown_body else []
-        summary = self.llm_client.summarize_paper(title=title, abstract=abstract)
-        learning_plan = self.llm_client.create_learning_plan(title=title, abstract=abstract)
-        glossary = self.llm_client.extract_glossary(title=title, abstract=abstract)
+
+        llm_analysis = self.llm_client.analyze_paper(
+            title=title,
+            abstract=abstract,
+            markdown_body=markdown_body,
+        )
+        summary = llm_analysis["summary"]
+        learning_plan = llm_analysis["learning_plan"]
+        glossary = llm_analysis["glossary"]
 
         analysis_json_path = workspace["output_dir"] / "analysis.json"
         reading_note_path = workspace["output_dir"] / "reading_note.md"
@@ -105,6 +113,7 @@ class PaperService:
 
         return analysis
 
+    # 基于论文问答
     def ask(self, paper_id: str, question: str) -> PaperQuestionAnswer:
         paper_id = paper_id.strip()
         question = question.strip()

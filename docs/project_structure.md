@@ -48,6 +48,7 @@ Paper-Reading-Agent/
 │   │       ├── __init__.py
 │   │       └── file_store.py
 │   └── tests/
+│       ├── conftest.py
 │       ├── test_api.py
 │       ├── test_paper_service.py
 │       ├── test_markdown_parser.py
@@ -114,7 +115,7 @@ API 路由层。职责是：
 
 业务流程层。`PaperService` 当前负责两个主流程：
 
-- `analyze()`：输入归一化、`paper_id` 生成、工作区创建、Markdown 保存、章节解析、正文分块、占位 LLM 分析、阅读笔记渲染和分析结果落盘。
+- `analyze()`：输入归一化、`paper_id` 生成、工作区创建、Markdown 保存、章节解析、正文分块、真实或占位 LLM 分析、阅读笔记渲染和分析结果落盘。
 - `ask()`：读取指定论文的 `chunks.json`，调用检索器，返回带引用片段的问答结果。
 
 服务层只编排，不应该包含复杂解析、渲染和检索细节。
@@ -142,9 +143,9 @@ API 路由层。职责是：
 
 ### backend/app/llm
 
-模型调用模块。当前 `LLMClient` 是占位实现，保留总结、学习计划和术语表生成接口。
+模型调用模块。当前 `LLMClient` 已接入 OpenAI Python SDK，并保留没有有效 API Key 或调用失败时的占位回退。
 
-后续接入 OpenAI API 或兼容大模型服务时，应优先改这个模块，而不是把模型调用散落到服务层或 API 层。
+这个模块负责读取 `.env` 配置、校验 API Key、构造 prompt、调用 `responses.parse()`、用 `LLMAnalysisResult` 约束模型输出，并将结果转换成项目内部 schema。后续接入兼容 OpenAI 协议的模型服务或扩展 prompt 时，应优先改这个模块，而不是把模型调用散落到服务层或 API 层。
 
 ### backend/app/storage
 
@@ -167,6 +168,7 @@ API 路由层。职责是：
 - 文本分块。
 - 关键词检索。
 - 阅读笔记渲染。
+- `conftest.py` 提供 `FakeLLMClient`，确保自动化测试不读取真实 `.env`、不调用真实 LLM、不依赖网络。
 
 `pytest.ini` 中设置了：
 
@@ -188,6 +190,7 @@ API 路由层。职责是：
 
 - 先本地闭环，再接外部服务。
 - 先稳定 schema，再接真实 LLM。
+- LLM 输出必须先经过 Pydantic 校验，再进入服务层、落盘文件和前端展示。
 - 先可追溯关键词检索，再升级语义检索。
 - 先把服务编排和具体能力拆开，避免后续功能堆进单个文件。
 - 每次新增能力都补对应测试，保证重构时有反馈。
