@@ -4,9 +4,9 @@ from app.services.paper_service import PaperService
 from app.storage.file_store import FileStore
 
 
-def test_analyze_creates_workspace_and_files(tmp_path):
+def test_analyze_creates_workspace_and_files(tmp_path, fake_llm_client):
     file_store = FileStore(root_dir=tmp_path)
-    service = PaperService(file_store=file_store)
+    service = PaperService(file_store=file_store, llm_client=fake_llm_client)
 
     result = service.analyze(
         title="Attention Is All You Need",
@@ -46,15 +46,21 @@ def test_analyze_creates_workspace_and_files(tmp_path):
     assert len(result.chunks) >= 1
     assert result.chunks[0].chunk_id == "chunk-0001"
 
-def test_analyze_requires_abstract_or_markdown_body(tmp_path):
-    service = PaperService(file_store=FileStore(root_dir=tmp_path))
+def test_analyze_requires_abstract_or_markdown_body(tmp_path, fake_llm_client):
+    service = PaperService(
+        file_store=FileStore(root_dir=tmp_path),
+        llm_client=fake_llm_client,
+    )
 
     with pytest.raises(ValueError, match="abstract or markdown_body"):
         service.analyze(title="Only Title", abstract="", markdown_body="")
 
 
-def test_analyze_supports_non_ascii_title(tmp_path):
-    service = PaperService(file_store=FileStore(root_dir=tmp_path))
+def test_analyze_supports_non_ascii_title(tmp_path, fake_llm_client):
+    service = PaperService(
+        file_store=FileStore(root_dir=tmp_path),
+        llm_client=fake_llm_client,
+    )
 
     result = service.analyze(
         title="注意力机制论文",

@@ -6,10 +6,14 @@ from app.main import app
 from app.services.paper_service import PaperService
 from app.storage.file_store import FileStore
 
+# API 测试仍然测试 FastAPI 路由，但服务层里的 LLM 被替换成 fake，不会读真实 .env
 @pytest.fixture
-def client(tmp_path):
+def client(tmp_path, fake_llm_client):
     def override_paper_service():
-        return PaperService(file_store=FileStore(root_dir=tmp_path))
+        return PaperService(
+            file_store=FileStore(root_dir=tmp_path),
+            llm_client=fake_llm_client,
+        )
 
     app.dependency_overrides[get_paper_service] = override_paper_service
 

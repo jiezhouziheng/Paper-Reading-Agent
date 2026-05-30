@@ -3,8 +3,11 @@ from app.services.paper_service import PaperService
 from app.storage.file_store import FileStore
 
 
-def test_render_reading_note_contains_stable_sections(tmp_path):
-    service = PaperService(file_store=FileStore(root_dir=tmp_path))
+def test_render_reading_note_contains_stable_sections(tmp_path, fake_llm_client):
+    service = PaperService(
+        file_store=FileStore(root_dir=tmp_path),
+        llm_client=fake_llm_client,
+    )
 
     analysis = service.analyze(
         title="Attention Is All You Need",
